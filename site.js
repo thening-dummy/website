@@ -439,6 +439,27 @@ if (bookingForm) {
   };
   const checkIn = bookingForm.elements.checkin;
   const checkOut = bookingForm.elements.checkout;
+  const roomSummary = bookingForm.querySelector('.room-summary');
+  const roomOptions = bookingForm.querySelector('.room-guest-options');
+  const occupancy = { rooms: 1, adults: 2, children: 0 };
+  const occupancyBounds = {
+    rooms: { min: 1, max: 5 },
+    adults: { min: 1, max: 10 },
+    children: { min: 0, max: 8 },
+  };
+  const updateOccupancy = () => {
+    bookingForm.querySelector('[data-room-summary]').textContent =
+      `${occupancy.rooms} ${occupancy.rooms === 1 ? 'Room' : 'Rooms'}, ${occupancy.adults} Adult, ${occupancy.children} Child`;
+    Object.entries(occupancy).forEach(([name, value]) => {
+      bookingForm.querySelector(`[data-count-value="${name}"]`).textContent = value;
+      bookingForm.querySelectorAll(`[data-count="${name}"]`).forEach((button) => {
+        const bounds = occupancyBounds[name];
+        button.disabled = button.dataset.change === '-1'
+          ? value <= (name === 'adults' ? occupancy.rooms : bounds.min)
+          : value >= bounds.max;
+      });
+    });
+  };
   checkIn.min = dateValue(today);
   checkOut.min = dateValue(tomorrow);
   checkIn.value = dateValue(today);
@@ -451,17 +472,55 @@ if (bookingForm) {
     if (checkOut.value <= checkIn.value) checkOut.value = dateValue(nextDay);
   });
 
+  roomSummary.addEventListener('click', () => {
+    const isExpanded = roomSummary.getAttribute('aria-expanded') === 'true';
+    roomSummary.setAttribute('aria-expanded', String(!isExpanded));
+    roomOptions.hidden = isExpanded;
+  });
+
+  roomOptions.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-count][data-change]');
+    if (!button) return;
+    const name = button.dataset.count;
+    const change = Number(button.dataset.change);
+    occupancy[name] = Math.min(occupancyBounds[name].max, occupancy[name] + change);
+    if (name === 'rooms' && occupancy.adults < occupancy.rooms) occupancy.adults = occupancy.rooms;
+    updateOccupancy();
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!roomOptions.hidden && !bookingForm.querySelector('.booking-room-picker').contains(event.target)) {
+      roomOptions.hidden = true;
+      roomSummary.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !roomOptions.hidden) {
+      roomOptions.hidden = true;
+      roomSummary.setAttribute('aria-expanded', 'false');
+      roomSummary.focus();
+    }
+  });
+
   bookingForm.addEventListener('submit', (event) => {
     event.preventDefault();
-    const [adults, children] = bookingForm.elements.guests.value.split(',');
     const bookingDetails = new URLSearchParams({
       propertyId: '56686',
       checkIn: checkIn.value,
       checkOut: checkOut.value,
-      noofrooms: '1',
-      adult0: adults,
-      child0: children,
+      noofrooms: String(occupancy.rooms),
     });
+    const adultsPerRoom = Math.floor(occupancy.adults / occupancy.rooms);
+    const extraAdults = occupancy.adults % occupancy.rooms;
+    const childrenPerRoom = Math.floor(occupancy.children / occupancy.rooms);
+    const extraChildren = occupancy.children % occupancy.rooms;
+    for (let room = 0; room < occupancy.rooms; room += 1) {
+      bookingDetails.set(`adult${room}`, String(adultsPerRoom + (room < extraAdults ? 1 : 0)));
+      bookingDetails.set(`child${room}`, String(childrenPerRoom + (room < extraChildren ? 1 : 0)));
+    }
     window.location.href = `https://www.swiftbook.io/inst/#home?${bookingDetails.toString()}`;
   });
+
+  updateOccupancy();
 }
