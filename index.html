@@ -33,7 +33,17 @@
       <form class="booking-form">
         <label>Check in<input name="checkin" type="date" required></label>
         <label>Check out<input name="checkout" type="date" required></label>
-        <label>Guests<select name="guests"><option value="2,0">2 adults</option><option value="1,0">1 adult</option><option value="3,0">3 adults</option><option value="2,1">2 adults, 1 child</option><option value="2,2">2 adults, 2 children</option></select></label>
+        <div class="booking-room-picker">
+          <span class="booking-room-label">ROOM</span>
+          <button class="room-summary" type="button" aria-expanded="false" aria-controls="room-guest-options">
+            <span data-room-summary>1 Room, 2 Adult, 0 Child</span><span class="room-summary-plus" aria-hidden="true">+</span>
+          </button>
+          <div class="room-guest-options" id="room-guest-options" hidden>
+            <div class="room-guest-row"><span>Room</span><div class="room-counter"><button type="button" data-count="rooms" data-change="-1" aria-label="Remove room">−</button><output data-count-value="rooms">1</output><button type="button" data-count="rooms" data-change="1" aria-label="Add room">+</button></div></div>
+            <div class="room-guest-row"><span>Adult</span><div class="room-counter"><button type="button" data-count="adults" data-change="-1" aria-label="Remove adult">−</button><output data-count-value="adults">2</output><button type="button" data-count="adults" data-change="1" aria-label="Add adult">+</button></div></div>
+            <div class="room-guest-row"><span>Child</span><div class="room-counter"><button type="button" data-count="children" data-change="-1" aria-label="Remove child">−</button><output data-count-value="children">0</output><button type="button" data-count="children" data-change="1" aria-label="Add child">+</button></div></div>
+          </div>
+        </div>
         <button class="button button-dark" type="submit">Check availability </button>
       </form>
     </section>
